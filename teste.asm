@@ -31,6 +31,10 @@ posTiro: var #1
 posAntTiro: var #1		
 FlagTiro: var #1
 
+tamanhoPalavra: var #1
+	static tamanhoPalavra + #0, #9
+
+
 main:
 	call ApagaTela
 	loadn r1, #tela1Linha0        ; endereco onde comeca a primeira linha do cenario!!
@@ -46,18 +50,22 @@ ApagaTela:
     ; Protegendo os conteúdos dos registradores:
 	push r0
 	push r1
+	push r2
 	
 	; Carregando constantes:
 	loadn r0, #1200		  ; total de posicoes da tela
 	loadn r1, #' '		  ; 32 (ASCII espaço)
-	
+	loadn r2, #0		  ; valor inteiro 0
+
 	; Loop (r0=1200; r0>=0;  r0--)
 	ApagaTela_Loop:	    
 		dec r0            ; r0--
 		outchar r1, r0    ; preenche espaço
+		cmp r0, r2
 		jnz ApagaTela_Loop
  
  	; Recuperando os valores anteriores dos registradores:
+	pop r2
 	pop r1
 	pop r0
 	
@@ -80,6 +88,7 @@ ImprimeTela:
 	
 	; Carregando constantes:
 	loadn r0, #0  	        ; posicao inicial (início da tela)
+	loadn r1, #0			; 
 	loadn r3, #40  	        ; largura da tela
 	loadn r4, #41  	        ; largura da tela + 1
 	loadn r5, #1200         ; largura * altura da tela 
@@ -174,7 +183,17 @@ Delay:
 	
 	rts ; return
 
-	
+move_palavra:		; 
+
+	push r0			; contador de palavras
+
+
+
+
+
+
+
+
 ; TELA 0 = tela vazia
 tela0Linha0  : string "                                        "
 tela0Linha1  : string "                                        "
@@ -239,3 +258,32 @@ tela1Linha26 : string "                                        "
 tela1Linha27 : string "                    ^                   "
 tela1Linha28 : string "                   / \\                  "
 tela1Linha29 : string "                  |^|^|                 "
+
+
+; palavras para o usuário digitar
+; COLOCAR DEPOIS AS PALAVRAS AQUI!!!
+ambiguous
+automatic
+available
+catalogue
+chocolate
+catalogue
+detective
+economics
+effective
+essential
+formation
+intention
+invisible
+modernize
+parameter
+performer
+policeman
+practical
+president
+privilege
+secretary
+situation
+strategic
+treatment
+vegetable 
