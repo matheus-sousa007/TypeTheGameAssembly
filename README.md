@@ -127,7 +127,7 @@ MIN_EIXO_X       | 'L' (left)
 MAX_EIXO_Y       | 'U' (up)
 MIN_EIXO_Y       | 'D' (down)
 
-Com o proósito de teste, um código simples em assembly foi elaborado para mostrar esses valores do arduino através da instrução inino. Sua representação no simulador:
+Com o propósito de teste, um código simples em assembly foi elaborado para mostrar esses valores do arduino através da instrução inino. Sua representação no simulador:
 
 ![Representação da instrução inino no simulador](./media/inino-simulador.png)
 

@@ -38,10 +38,13 @@ palavraAtual:	var #40
 
 corAtualdaPalavra: var #1
 
-velocInicialPalavra: var #1
-	static velocInicialPalavra + #0, #7
-
 linhaAtualdaPalavra: var #1
+
+nPalavrasResolvidas: var #1
+
+tabelaRandpos: var #1
+
+
 
 Rand : var #24			; Tabela de nr. Randomicos entre 1 - 25 (para pegar as palavras de maneira randomica)
 	static Rand + #0, #13
@@ -75,8 +78,18 @@ main:
 	loadn r1, #tela1Linha0        ; endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #1536  			  ; cor branca!
 	call ImprimeTela    		  ; rotina de Impresao de Cenario na Tela Inteira
-	call Delay
-	jmp main
+	
+	loadn r1, #palavra1
+	loadn r3, #41
+	loadn r5, #25
+	main_Loop:
+		call interage_palavra
+		add r1, r1, r3
+		load r4, nPalavrasResolvidas
+		cmp r4, r5
+		jle main_Loop
+
+	jmp fimDoJogo 
 
 
 ; Descrição: Apaga a tela inteira, preenchendo-a com espaços (' ')
@@ -237,16 +250,20 @@ ImprimeStrInteira:
 
 
 
-Delay:
-	
+Delay:		; Função de delay para a palavra
 	; Protegendo o conteúdo dos registradores:
 	push r0
 	push r1
-	
+	push r2
+
 	; Loop de delay:
-    Delay_volta2:
-	    loadn r0, #5000
-	    loadn r1, #50
+	loadn r0, #40000
+	loadn r1, #25
+    load r2, nPalavrasResolvidas
+	
+	sub r1, r1, r2
+
+	Delay_volta2:
         Delay_volta: 
 	        dec r0					
 	        jnz Delay_volta	
@@ -254,21 +271,20 @@ Delay:
 	    jnz Delay_volta2
 	
 	; Recuperando o valor anterior dos registradores:
+	pop r2
 	pop r1
 	pop r0
 	
 	rts ; return
 
 move_palavra:	; função que move a palavra no vídeo
-				; Parâmetros:
-				;	r0 -> linha atual da palavra
-				;	r1 -> endereço inicial da palavra
 	; Proteção de dados dos registradores
 	push r0 	
 	push r2
 	push r4		
 	push r1
-
+	
+	load r0, palavra
 	loadn r2, #25 		; limite máximo da linha da palavra
 
 	cmp r0, r2			; if(r0 == r2){ O jogo termina }
@@ -288,9 +304,10 @@ move_palavra:	; função que move a palavra no vídeo
 	inc r0
 	mult r0, r0, r4
 	
-	pop r1
+	loadn r1, #palavraAtual
 	call ImprimeStrInteira
 
+	pop r1
 	pop r4
 	pop r2
 	pop r0
@@ -298,16 +315,23 @@ move_palavra:	; função que move a palavra no vídeo
 	rts		; return
 
 nova_palavra:		; funcão que imprime uma nova palavra
-			 		; Parâmetros:
-					;	r1 -> endereço inicial para a palavra
+					; Parâmetros:
+					;	r1 -> endereço inicial da nova palavra a ser inserida
 	push r0
 	push r1
 	push r2
 
+	call mudarPalavraAtual
+
+	loadn r1, #palavraAtual	; endereço inicial da palavra
 	loadn r0, #0	; posição inicial da palavra
 	loadn r2, #0000 ; cor branca para impressão da palavra
 
 	call ImprimeStrInteira
+
+	load r0, nPalavrasResolvidas
+	inc r0
+	store nPalavrasResolvidas, r0
 
 	pop r2
 	pop r1
@@ -333,16 +357,22 @@ DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra
 
 
 interage_palavra:	;	Função que interage com a palavra 
-
+					; Parâmetros:
+					;	r1 -> endereço inicial da palavra nova
 	push r0
 	push r1
 	push r2
 	push r3
+	push r4
+
+	call nova_palavra
 
 	loadn r0, #16
 	add r0, r0, #palavraAtual	; r0 = #palavraAtual + #16 (posição da primeira letra na variavel global)
 	loadn r2, #25
-	add r2, r2, #palavraAtual
+	add r2, r2, #palavraAtual	; posição final da palavra
+
+	loadn r4, #0				; contador de linha para a palavra
 	interage_palavra_Loop:
 		loadi r1, r0			; Obtém a letra da palavra que deve ser digitada
 
@@ -355,9 +385,17 @@ interage_palavra:	;	Função que interage com a palavra
 		ceq mudaCorPalavra
 
 		cmp r0, r2				; contador para o loop
-		inc r0					
+		inc r0
+		push r0
+		loadi r0, r4			; posição atual da palavra
+		call move_palavra		
+		call Delay
+
+		inc r4
+		pop r0
 		jle interage_palavra_Loop
 
+	pop r4
 	pop r3
 	pop r2
 	pop r1
@@ -408,8 +446,8 @@ mudarPalavraAtual:		; Função que altera a palavra atual
 	call mudaCorPalavra	; muda a cor da palavra
 
 	loadn r0, #palavraAtual 	; Endereço inicial de palavraAtual
-	loadn r2, #40
-	loadn r3, #0
+	loadn r2, #40				; tamanho total da string
+	loadn r3, #0				; contador para escrever a palavra
 	mudarPalavraAtual_Loop:
 		storei r0, r1
 		
@@ -424,6 +462,36 @@ mudarPalavraAtual:		; Função que altera a palavra atual
 	pop r0
 
 	rts
+
+fimDoJogo:		; Printa a tela de fim de jogo
+	push r0
+	push r1
+	push r2
+
+	load r0, nPalavrasResolvidas
+	loadn r1, #25
+	cmp r0, r1
+	jeq fimDoJogo_Ganhou
+
+	fimDoJogo_Perdeu:
+		loadn r1, #tela4Linha0
+		loadn r2, #2304
+
+		call ImprimeTela
+		jmp fim
+
+	fimDoJogo_Ganhou:
+		loadn r1, #tela4Linha0
+		loadn r2, #2560
+
+		call ImprimeTela
+	pop r2
+	pop r1
+	pop r0
+
+	fim:
+		halt
+
 
 ; TELA 0 = tela vazia
 tela0Linha0  : string "                                        "
@@ -491,36 +559,108 @@ tela1Linha28 : string "                  |^  ^|                "
 tela1Linha29 : string "                  |____|                "
 
 ; TELA 2 = tela inicial do joguinho
-tela0Linha0  : string "                                        "
-tela0Linha1  : string "                                        "
-tela0Linha2  : string "                                        "
-tela0Linha3  : string "                                        "
-tela0Linha4  : string "    ._____.  __      __  _____ _____    "
-tela0Linha5  : string "    |_   _|  \\ \\  / / || * | |____|     "
-tela0Linha6  : string "      | |     \\ \\/ /  ||---- |____      "
-tela0Linha7  : string "      | |       |   |   ||     |____|   "
-tela0Linha8  : string "      | |       |   |   ||     |____    "
-tela0Linha9  : string "      |_|       |___|   ||     |____|   "
-tela0Linha10 : string "                                        "
-tela0Linha11 : string "                                        "
-tela0Linha12 : string "       _______  _     _   _____         "
-tela0Linha13 : string "       |_   _| | |   | |  |____|        "
-tela0Linha14 : string "         | |   | |___| |  |____         "
-tela0Linha15 : string "         | |   |  ___  |  |____|        "
-tela0Linha16 : string "         | |   | |   | |  |____         "
-tela0Linha17 : string "         |_|   |_|   |_|  |____|        "
-tela0Linha18 : string "                                        "
-tela0Linha19 : string "                                        "
-tela0Linha20 : string "   ___               _     _   ______   "
-tela0Linha21 : string "  //__|     /\\     | \\  / |  |_____|    "
-tela0Linha22 : string " //  __    /  \\    |  \\/  |  |_____     "
-tela0Linha23 : string "||  |__|  / /\\ \\  | |\\_/| | |_____|     "
-tela0Linha24 : string "||   //  /_/  \\_\\ | |   |_|  |_____     "
-tela0Linha25 : string " \\_//  /_/     \\_\\ |_|   |_||_____|     "
-tela0Linha26 : string "                                        "
-tela0Linha27 : string "                                        "
-tela0Linha28 : string "                                        "
-tela0Linha29 : string "                                        "
+tela2Linha0  : string "                                        "
+tela2Linha1  : string "                                        "
+tela2Linha2  : string "                                        "
+tela2Linha3  : string "                                        "
+tela2Linha4  : string "    ._____.  __      __  _____ _____    "
+tela2Linha5  : string "    |_   _|  \\ \\  / / || * | |____|     "
+tela2Linha6  : string "      | |     \\ \\/ /  ||---- |____      "
+tela2Linha7  : string "      | |       |   |   ||     |____|   "
+tela2Linha8  : string "      | |       |   |   ||     |____    "
+tela2Linha9  : string "      |_|       |___|   ||     |____|   "
+tela2Linha10 : string "                                        "
+tela2Linha11 : string "                                        "
+tela2Linha12 : string "       _______  _     _   _____         "
+tela2Linha13 : string "       |_   _| | |   | |  |____|        "
+tela2Linha14 : string "         | |   | |___| |  |____         "
+tela2Linha15 : string "         | |   |  ___  |  |____|        "
+tela2Linha16 : string "         | |   | |   | |  |____         "
+tela2Linha17 : string "         |_|   |_|   |_|  |____|        "
+tela2Linha18 : string "                                        "
+tela2Linha19 : string "                                        "
+tela2Linha20 : string "   ___               _     _   ______   "
+tela2Linha21 : string "  //__|     /\\     | \\  / |  |_____|    "
+tela2Linha22 : string " //  __    /  \\    |  \\/  |  |_____     "
+tela2Linha23 : string "||  |__|  / /\\ \\  | |\\_/| | |_____|     "
+tela2Linha24 : string "||   //  /_/  \\_\\ | |   |_|  |_____     "
+tela2Linha25 : string " \\_//  /_/     \\_\\ |_|   |_||_____|     "
+tela2Linha26 : string "                                        "
+tela2Linha27 : string "                                        "
+tela2Linha28 : string "                                        "
+tela2Linha29 : string "                                        "
+
+
+
+
+; TELA 0 = tela vazia
+tela3Linha0  : string "                                        "
+tela3Linha1  : string "                                        "
+tela3Linha2  : string "                                        "
+tela3Linha3  : string "                                        "
+tela3Linha4  : string "                                        "
+tela3Linha5  : string "                                        "
+tela3Linha6  : string "      ==========================        "
+tela3Linha7  : string "     |                          |       "
+tela3Linha8  : string "     |  V O C Ê   G A N H O U   |       "
+tela3Linha9  : string "     |                          |       "
+tela3Linha10 : string "     |    JOGAR  NOVAMENTE?     |       "
+tela3Linha11 : string "     |                          |       "
+tela3Linha12 : string "     | A - SIM         B - NÃO  |       "
+tela3Linha13 : string "     |                          |       "
+tela3Linha14 : string "      ==========================        "
+tela3Linha15 : string "                                        "
+tela3Linha16 : string "                                        "
+tela3Linha17 : string "                                        "
+tela3Linha18 : string "                                        "
+tela3Linha19 : string "                                        "
+tela3Linha20 : string "                                        "
+tela3Linha21 : string "                                        "
+tela3Linha22 : string "                                        "
+tela3Linha23 : string "                                        "
+tela3Linha24 : string "                                        "
+tela3Linha25 : string "                                        "
+tela3Linha26 : string "                                        "
+tela3Linha27 : string "                                        "
+tela3Linha28 : string "                                        "
+tela3Linha29 : string "                                        "
+
+
+; TELA 0 = tela vazia
+tela4Linha0  : string "                                        "
+tela4Linha1  : string "                                        "
+tela4Linha2  : string "                                        "
+tela4Linha3  : string "                                        "
+tela4Linha4  : string "                                        "
+tela4Linha5  : string "                                        "
+tela4Linha6  : string "      ==========================        "
+tela4Linha7  : string "     |                          |       "
+tela4Linha8  : string "     |  V O C Ê   P E R D E U   |       "
+tela4Linha9  : string "     |                          |       "
+tela4Linha10 : string "     |    JOGAR  NOVAMENTE?     |       "
+tela4Linha11 : string "     |                          |       "
+tela4Linha12 : string "     | A - SIM         B - NÃO  |       "
+tela4Linha13 : string "     |                          |       "
+tela4Linha14 : string "      ==========================        "
+tela4Linha15 : string "                                        "
+tela4Linha16 : string "                                        "
+tela4Linha17 : string "                                        "
+tela4Linha18 : string "                                        "
+tela4Linha19 : string "                                        "
+tela4Linha20 : string "                                        "
+tela4Linha21 : string "                                        "
+tela4Linha22 : string "                                        "
+tela4Linha23 : string "                                        "
+tela4Linha24 : string "                                        "
+tela4Linha25 : string "                                        "
+tela4Linha26 : string "                                        "
+tela4Linha27 : string "                                        "
+tela4Linha28 : string "                                        "
+tela4Linha29 : string "                                        "
+
+
+
+
 
 ; palavras para o usuário digitar
 ; COLOCAR DEPOIS AS PALAVRAS AQUI!!!
@@ -548,4 +688,4 @@ palavra21 : string "                secretary                 "
 palavra22 : string "                situation                 "
 palavra23 : string "                strategic                 "
 palavra24 : string "                treatment                 "
-palavra25 : string "                vegetable                 "
+palavra25 : string "                vegetable                 "]
