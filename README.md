@@ -14,9 +14,9 @@ O hardware do processador foi construído em Linguagem C. A simulação da execu
 
 ### Proposta de Modificação  
 
-![Imagem da Nova Instrução](./novaInstrucao.png)
+Como proposta de modificação, foi adicionada uma nova instrução chamada `inino`, que, em suma, lê um valor reproduzido por um Arduino conectado a uma porta USB (como se fosse um teclado) e o armazena em um registrador rx.
 
-Como proposta de modificação, foi adicionada uma nova instrução chamada `inino`, que, em suma, lê um valor reproduzido por um Arduino conectado a uma porta USB (como se fosse um teclado).
+![Imagem da Nova Instrução](./novaInstrucao.png)
 
 O OPCODE dessa nova instrução foi definido como `110110`, i.e., `54`. Um novo sinal de controle chamado `sARDUINO` foi criado para determinar uma entrada extra para o MUX2. Assim, nas diretivas de pré-processamento foram definidos:
 
