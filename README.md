@@ -18,7 +18,7 @@ Como proposta de modificação, foi adicionada uma nova instrução chamada `ini
 
 ![Imagem da Nova Instrução](./novaInstrucao.png)
 
-O OPCODE dessa nova instrução foi definido como `110110`, i.e., `54`. Um novo sinal de controle chamado `sARDUINO` foi criado para determinar uma entrada extra para o MUX2. Assim, nas diretivas de pré-processamento foram definidos:
+O OPCODE dessa nova instrução foi definido como `110110`, i.e., `54`. Um novo sinal de controle chamado `sARDUINO` foi criado para determinar uma entrada extra para o `mux2`. Assim, nas diretivas de pré-processamento foram definidos:
 
 ```c
     #define sARDUINO 5  // novo sinal de controle para o mux2
@@ -50,7 +50,7 @@ Para a decodificação da `inino`, foi adicionado um novo case:
     }
 ```
 
-Na seleção da entrada do mux2, foi adicionado a seguinte verificação:
+Na seleção da entrada do `mux2`, foi adicionado a seguinte verificação:
 
 ```c
     ...
