@@ -34,10 +34,16 @@ FlagTiro: var #1
 tamanhoPalavra: var #1
 	static tamanhoPalavra + #0, #9
 
+palavraAtual:	var #40
+
+corAtualdaPalavra: var #1
+
 velocInicialPalavra: var #1
 	static velocInicialPalavra + #0, #7
 
-Rand : var #24			; Tabela de nr. Randomicos entre 1 - 25
+linhaAtualdaPalavra: var #1
+
+Rand : var #24			; Tabela de nr. Randomicos entre 1 - 25 (para pegar as palavras de maneira randomica)
 	static Rand + #0, #13
 	static Rand + #1, #5
 	static Rand + #2, #8
@@ -298,8 +304,6 @@ nova_palavra:		; funcão que imprime uma nova palavra
 	push r1
 	push r2
 
-					; codar a função limpa palavra 
-
 	loadn r0, #0	; posição inicial da palavra
 	loadn r2, #0000 ; cor branca para impressão da palavra
 
@@ -311,22 +315,50 @@ nova_palavra:		; funcão que imprime uma nova palavra
 
 	rts ; return
 
+DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra"		;	Parâmetros:
+			;		r1 -> Próxima letra esperada da palavra
+	push r0
+	push r1
 
-limpa_palavra:		; função que remove a palavra da tela
-					; Parâmetros:
-					;	r0 -> linha da palavra
+   DigLetra_Loop:
+		inchar r0			; Le o teclado, se nada for digitado = 255
+		cmp r0, r1			; compara r0 com a letra esperada
+		jne DigLetra_Loop	; Caso não seja a letra esperada fica nesse loop até que seja digitada pelo usuário
+
+	store letraDigitada, r0			; Salva a tecla na variavel global "Letra"
+
+	pop r1
+	pop r0
+	rts
+
+
+interage_palavra:	;	Função que interage com a palavra 
+
 	push r0
 	push r1
 	push r2
+	push r3
 
-	loadn r2, #40	; r0 *= r2 (posicao inicial da palavra a ser removida)
-	mult r0, r0, r2
+	loadn r0, #16
+	add r0, r0, #palavraAtual	; r0 = #palavraAtual + #16 (posição da primeira letra na variavel global)
+	loadn r2, #25
+	add r2, r2, #palavraAtual
+	interage_palavra_Loop:
+		loadi r1, r0			; Obtém a letra da palavra que deve ser digitada
 
-	loadn r2, #0			; cor branca para impressão da mensagem
-	loadn r1, #tela0Linha0	; linha sem conteúdo para limpar a palavra
+		call DigLetra			; Chama a DigLetra para pegar o input do usuário
 
-	call ImprimeStrInteira
+		load r3, letraDigitada	; Resgata o input do usuário
 
+		cmp r1, r3				; Caso o input seja a devida letra a ser digitada
+		ceq deletaLetra			; chama a função deletaLetra
+		ceq mudaCorPalavra
+
+		cmp r0, r2				; contador para o loop
+		inc r0					
+		jle interage_palavra_Loop
+
+	pop r3
 	pop r2
 	pop r1
 	pop r0
@@ -334,53 +366,64 @@ limpa_palavra:		; função que remove a palavra da tela
 	rts
 
 
+deletaLetra:		; Função que deleta a letra da palavra atual
+					; Parâmetros:
+					;	r0 -> posição da letra a ser deletada
+	; Protegendo o conteúdo dos registradores
+	push r0
+	push r1
+
+	loadn r1, #' '			; Caractere espaço ' ' (ASCII = 32)
+
+	storei r0, r1
+
+	pop r1
+	pop r0
+
+	rts
+
+mudaCorPalavra:		; Função que muda a cor da palavra
+					; Parâmetros:
+					;	r0 -> nova cor da palavra
+
+	push r0
+
+	store corAtualdaPalavra, r0	; armazena a nova cor
+
+	pop r0
+
+	rts		; return
 
 
+mudarPalavraAtual:		; Função que altera a palavra atual
+						; Parâmetros:
+						;	r1 -> endereço inicial para a nova palavra
+	push r0
+	push r1
+	push r2
+	push r3
 
+	loadn r0, #0000		; cor branca para impressão da palavra
 
+	call mudaCorPalavra	; muda a cor da palavra
 
+	loadn r0, #palavraAtual 	; Endereço inicial de palavraAtual
+	loadn r2, #40
+	loadn r3, #0
+	mudarPalavraAtual_Loop:
+		storei r0, r1
+		
+		cmp r3, r2
+		inc r0
+		inc r3
+		jle mudarPalavraAtual_Loop
 
+	pop r3
+	pop r2
+	pop r1
+	pop r0
 
-;move_palavra:		; Função de interação das palavras na tela
-	; preservando o conteúdo dos registradores
-;	push r0			
-;	push r1
-;	push r2
-;	push r3
-;	push r4
-;	push r5
-;	push r6
-;
-;	loadn r0, #24					; quantidade total de palavras
-;	loadn r1, #palavra0				; ponteiro para o inicio do conjunto de palavras
-;	loadn r2, tamanhoPalavra		; carrega o tamanho da palavra 
-;	; ------------------------------------------------------------------
-;	loadn r3, tamanhoPalavra		;
-;	loadn r4, #1					;	
-;	add r3, r3, r4					; r3 = tamanhoPalavra + 1 -> pula para a próxima palavra (precisa pular tamPalavra + '\0')
-;	; -----------------------------------------------------------------
-;	loadn r5, #0					; contador de palavras
-;	loadn r6, velocInicialPalavra   ; contador de velocidade da palavra
-;
-;	move_palavra_Loop:
-;		push r2
-;
-;
-;		pop r2
-;		cmp r5, r0
-;		jle move_palavra_Loop
-;
-;	pop r6
-;	pop r5
-;	pop r4
-;	pop r3
-;	pop r2
-;	pop r1
-;	pop r0
-;
-;	rts
-
-
+	rts
 
 ; TELA 0 = tela vazia
 tela0Linha0  : string "                                        "
@@ -480,7 +523,6 @@ tela0Linha28 : string "                                        "
 tela0Linha29 : string "                                        "
 
 ; palavras para o usuário digitar
-<<<<<<< HEAD
 ; COLOCAR DEPOIS AS PALAVRAS AQUI!!!
 palavra1  : string "                ambiguous                 "
 palavra2  : string "                automatic                 "
@@ -507,55 +549,3 @@ palavra22 : string "                situation                 "
 palavra23 : string "                strategic                 "
 palavra24 : string "                treatment                 "
 palavra25 : string "                vegetable                 "
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
-palavra1 : string "ambiguous"
-palavra2 : string "automatic"
-palavra3 : string "available"
-palavra4 : string "catalogue"
-palavra5 : string "chocolate"
-palavra6 : string "catalogue"
-palavra7 : string "detective"
-palavra8 : string "economics"
-palavra9 : string "effective"
-palavra10 : string "essential"
-palavra11 : string "formation"
-palavra12 : string "intention"
-palavra13 : string "invisible"
-palavra14 : string "modernize"
-palavra15 : string "parameter"
-palavra16 : string "performer"
-palavra17 : string "policeman"
-palavra18 : string "practical"
-palavra19 : string "president"
-palavra20 : string "privilege"
-palavra21 : string "secretary"
-palavra22 : string "situation"
-palavra23 : string "strategic"
-palavra24 : string "treatment"
-palavra25 : string "vegetable"
->>>>>>> e7f5f1d9668b24b9c4b70bfb17e89cd373a96762
