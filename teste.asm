@@ -480,6 +480,7 @@ tela0Linha28 : string "                                        "
 tela0Linha29 : string "                                        "
 
 ; palavras para o usuário digitar
+<<<<<<< HEAD
 ; COLOCAR DEPOIS AS PALAVRAS AQUI!!!
 palavra1  : string "                ambiguous                 "
 palavra2  : string "                automatic                 "
@@ -531,3 +532,30 @@ palavra25 : string "                vegetable                 "
 
 
 
+=======
+palavra1 : string "ambiguous"
+palavra2 : string "automatic"
+palavra3 : string "available"
+palavra4 : string "catalogue"
+palavra5 : string "chocolate"
+palavra6 : string "catalogue"
+palavra7 : string "detective"
+palavra8 : string "economics"
+palavra9 : string "effective"
+palavra10 : string "essential"
+palavra11 : string "formation"
+palavra12 : string "intention"
+palavra13 : string "invisible"
+palavra14 : string "modernize"
+palavra15 : string "parameter"
+palavra16 : string "performer"
+palavra17 : string "policeman"
+palavra18 : string "practical"
+palavra19 : string "president"
+palavra20 : string "privilege"
+palavra21 : string "secretary"
+palavra22 : string "situation"
+palavra23 : string "strategic"
+palavra24 : string "treatment"
+palavra25 : string "vegetable"
+>>>>>>> e7f5f1d9668b24b9c4b70bfb17e89cd373a96762
