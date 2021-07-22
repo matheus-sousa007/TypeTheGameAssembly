@@ -16,7 +16,7 @@ O hardware do processador foi construído em Linguagem C. A simulação da execu
 
 Como proposta de modificação, foi adicionada uma nova instrução chamada `inino`, que, em suma, lê um valor reproduzido por um Arduino conectado a uma porta USB (como se fosse um teclado) e o armazena em um registrador rx.
 
-![Imagem da Nova Instrução](./novaInstrucao.png)
+![Imagem da Nova Instrução](./media/novaInstrucao.png)
 
 O OPCODE dessa nova instrução foi definido como `110110`, i.e., `54`. Um novo sinal de controle chamado `sARDUINO` foi criado para determinar uma entrada extra para o `mux2`. Assim, nas diretivas de pré-processamento foram definidos:
 
@@ -62,7 +62,7 @@ Na seleção da entrada do `mux2`, foi adicionado a seguinte verificação:
 
 O desenho da arquitetura pode ser acompanhado a seguir:
 
-![Imagem da Nova Arquitetura](./novaArquitetura.png)
+![Imagem da Nova Arquitetura](./media/novaArquitetura.png)
 
 ## Item 4 - Teste do Novo Hardware
 
@@ -116,14 +116,25 @@ E também um case para quando o nome da instrução for lido:
     ...
 ```
 
-### Execução da Nova Instrução
+### Execução no Simulador
 
-Como o SimpleSimulator não possui tela gráfica, o teste da nova instrução teve que ser feito no OpenGLSimulator. Entretanto, este apresentou uma execução lenta do código, não atestando uma simulação satisfatória.
+Para o diálogo do arduino com o processador, foi desenvolvido um sketch para ler valores analógicos de um mini joystick e escrever seus indicadores correspondentes na entrada padrão. Em síntese, o programa carregado no arduino tem o seguinte comportamento:
 
-Portanto, para que fosse possível testar a nova instrução, fizemos uma adaptação no código. Em vez de chamarmos a instrução `inino` para ler um valor do arduino, chamamos a instrução `inchar`, que tem praticamente o mesmo datapath da instrução `inino`, a menos dos opcodes e sinais de controle. 
+Valor lido do joystick | Valor escrito na entrada padrão
+:---------------------: | :-----------------------------:
+MAX_EIXO_X       | 'R' (right)
+MIN_EIXO_X       | 'L' (left)
+MAX_EIXO_Y       | 'U' (up)
+MIN_EIXO_Y       | 'D' (down)
 
-Sendo assim, em vez de o valor retornado pela inchar representar um caractere lido do teclado, ele passa a representa um valor lido do arduino em forma de caractere, possibilitando que a lógica do programa permaneça válida.
+Com o proósito de teste, um código simples em assembly foi elaborado para ler esses valores do arduino através da instrução inino. Sua representação no simulador:
 
-Seguem alguns exemplos dos testes realizados:
+![Representação da instrução inino no simulador](./media/inino-simulador.png)
 
-TODO: Colocar gifs jogando alguns jogos com joystick
+A saída do simulador se deu conforme a imagem abaixo:
+
+![Teste dos valores lidos pela inino](./media/gif1.gif)
+
+Tendo a nova instrução implementada e funcionando, podemos adaptar jogos já feitos, retirando as instruções `inchar`s, substituindo-as por instruções `inino`s. Como resultado, podemos jogar com joystick:
+
+![Adaptação de um jogo com a inino](./media/gif2.gif)
