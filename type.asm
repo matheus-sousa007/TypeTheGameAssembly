@@ -21,8 +21,11 @@ jmp main
 
 corAtualdaPalavra: var #1
 nPalavrasResolvidas: var #1
+	static nPalavrasResolvidas + #0, #0
 palavraAtual: var #41
 posAtualdaPalavra: var #1
+nLetrasDeletadas: var #1
+letraDigitada: var #1
 
 main:
 
@@ -36,52 +39,76 @@ main:
 	loadn r2, #1280				; cor roxa para impressão da tela
 	call ImprimeTela
 
-	loadn r1, #2560
+	loadn r1, #2560				; cor verde lima para corAtualdaPalavra
 	store corAtualdaPalavra, r1
 
-;	loadn r1, #palavra1
-;	loadn r0, #0
-;	call mudarPalavraAtual
-;	loadn r1, #palavraAtual
-;	loadn r0, #0
-	;breakp
-;	call ImprimeStr
-;	call DelayFixo
-
-	loadn r3, #0
-	loadn r6, #palavra1
-	loadn r4, #41
-	loadn r5, #24
-	loadn r0, #0
-
-	main_Loop:
+	loadn r3, #0				; contador de palavras
+	loadn r6, #palavra1			; endereço inicial da primeira palavra
+	loadn r4, #41				; valor para pular para a próxima palavra na memória
+	loadn r5, #24				; número máximo de palavras
+	
+		main_Loop:
 		;breakp
-		loadn r0, #0
 		mov r1, r6
 		call mudarPalavraAtual
-		loadn r1, #palavraAtual
-		loadn r0, #0
-		load r2, corAtualdaPalavra
+		loadn r1, #palavraAtual			; pega a palavraAtual
+		loadn r0, #0					; posição para impressão na tela
+		load r2, corAtualdaPalavra		; resgata a cor para impressão na tela
 		call ImprimeStr
 		call DelayFixo
 		push r5
 		push r6
-		loadn r5, #0
-		loadn r6, #25
+		loadn r5, #0					; contador para o move_palavra				; for(int r5 = 0; r5 < r6; r5++)
+		loadn r6, #25					; linha limite onde a palavra pode chegar-
+
 		move_palavra_Loop:
-			call move_palavra
+			push r0
+			push r1
+			push r2
+			; calcula o endereço da letra certa para resgatar a letra esperada
+			loadn r0, #palavraAtual	
+			loadn r1, #16
+			load r2, nLetrasDeletadas
+			add r0, r0, r1
+			add r0, r0, r2
+			loadi r1, r0
+			;---------------
+			call DigLetra
+			load r2, letraDigitada			; resgata a letra digitada
+			cmp r1, r2						; if(r1 == r2) then deletaLetra, r1 -> letra esperada, r2 -> letra digitada(ou 255 caso não tenha input)
+			ceq deletaLetra
+			pop r2
+			pop r1
+			pop r0
+			call move_palavra				; move a palavra para 1 linha abaixo
 			call DelayFixo
-			inc r5
+			push r5
+			push r6
+			load r5, nLetrasDeletadas		; verifica se todas as letras já foram deletadas
+			loadn r6, #9
 			cmp r5, r6
+			pop r6
+			pop r5
+			jeq fimMovepalavra				; caso todas as letras foram deletadas, sai do loop interno
+			inc r5
+			cmp r5, r6						; enquanto não chegou na ultima linha, volta para o loop
 			jne move_palavra_Loop
+			jeq fimDoJogo_Perdeu			; caso a palavra chegou no limite da última linha, a pessoa perde o jogo
+		fimMovepalavra:
+		push r0
+
+		load r0, nPalavrasResolvidas		; incrementa o nº de palavras resolvidas com o fim do move_palavra_Loop
+		inc r0
+		store nPalavrasResolvidas, r0
+
+		pop r0
 		pop r6
 		pop r5
 		add r6, r6, r4
-		cmp r3, r5
+		cmp r3, r5							; continua no loop até o contador de palavras não chegar no limite
 		inc r3
 		jne main_Loop
-
-    halt
+		jeq fimDoJogo_Ganhou				; caso tenha chegado no limite, vai para fimDoJogo_Ganhou
 
 ;********************************************************
 ;                       IMPRIME TELA
@@ -224,14 +251,14 @@ mudaCorPalavra:		; Função que muda a cor da palavra
 	loadn r0, #0000 	; cor branca
 	loadn r1, #2560		; cor verde lima
 	load r2, corAtualdaPalavra		; r2 = corAtualdaPalavra
-	
+	;breakp
 	cmp r2, r0
-	jmp MudaCorBranca
+	jeq MudaCorBranca
 	MudaCorLima:
-		store corAtualdaPalavra, r0
+		store corAtualdaPalavra, r0		; muda da cor Lima para branca 
 		jmp fimMudaCor
 	MudaCorBranca:
-		store corAtualdaPalavra, r1
+		store corAtualdaPalavra, r1		; muda da cor branca para lima
 	fimMudaCor:
 
 	pop r2
@@ -252,20 +279,23 @@ mudarPalavraAtual:		; Função que altera a palavra atual
 	
 	call mudaCorPalavra	; muda a cor da palavra
 
+	
 	loadn r0, #palavraAtual 	; Endereço inicial de palavraAtual
 	;breakp
 	loadn r2, #40				; tamanho total da string
 	loadn r3, #0				; contador para escrever a palavra
-	store posAtualdaPalavra, r3
-	mudarPalavraAtual_Loop:
+	store posAtualdaPalavra, r3	; zerando a posição atual da palavra
+	store nLetrasDeletadas, r3	; zerando o número de letras deletadas
+
+	mudarPalavraAtual_Loop:		; Loop para mudar a palavraAtual
 		;breakp
-		loadi r5, r1
+		loadi r5, r1			; modifica a palavra atual resgatando cada letra da memória e colocando na variável palavraAtual
 		storei r0, r5
 		inc r0
 		inc r1
 		inc r3
 		cmp r3, r2
-		jle mudarPalavraAtual_Loop
+		jle mudarPalavraAtual_Loop 	; enquanto não substituiu por completo a palavra, continua no loop
 
 	loadn r3, #'\0'				; acrescentar o '\0' na string
 	storei r0, r3
@@ -309,7 +339,7 @@ move_palavra:	; função que move a palavra no vídeo
 	store posAtualdaPalavra, r0
 	mul r0, r0, r4
 	
-	loadn r1, #palavraAtual
+	loadn r1, #palavraAtual			; imprime a palavraAtual de acordo com a devida cor
 	load r2, corAtualdaPalavra
 	call ImprimeStr
 
@@ -320,6 +350,108 @@ move_palavra:	; função que move a palavra no vídeo
 
 	rts		; return
 
+deletaLetra:		; Função que deleta a letra da palavra atual
+					; Parâmetros:
+					;	r0 -> posição da letra a ser deletada
+	; Protegendo o conteúdo dos registradores
+	push r0
+	push r1
+	push r2
+	loadn r1, #' '			; Caractere espaço ' ' (ASCII = 32)
+	storei r0, r1
+
+	load r0, posAtualdaPalavra	;	sobrescreve a palavraAtual naquela linha
+	loadn r2, #40
+	mul r0, r0, r2
+	loadn r1, #palavraAtual
+	
+	call ImprimeStr
+
+	load r2, nLetrasDeletadas	; adiciona o número de letras deletadas
+	inc r2
+	store nLetrasDeletadas, r2
+
+	load r1, corAtualdaPalavra	; muda a cor da palavra caso necessário
+	loadn r2, #0000
+	cmp r1, r2
+	ceq mudaCorPalavra
+
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+
+DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra"
+
+	push r0
+	push r1
+   	inchar r0						; Le o teclado, se nada for digitado = 255
+	store letraDigitada, r0			; Salva a tecla na variavel global "letraDigitada"
+	pop r1
+	pop r0
+	rts
+
+fimDoJogo_Perdeu:	; Função para imprimir a tela "VOCÊ PERDEU!!!"
+	
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+	push r6
+
+	loadn r1, #30				; Calcula o endereço para adicionar o número de palavras resolvidas na tela
+	loadn r2, #tela4Linha13
+	add r2, r2, r1
+
+	loadn r6, #'0'					; adicionando o número de palavras resolvidas na tela ;
+	load r3, nPalavrasResolvidas
+	loadn r4, #10
+	div r5, r3, r4					; r5 = r3/r4 -> r5 recebe o decimal
+	mod r3, r3, r4					; r3 = r3 % r4 -> r3 recebe a unidade
+
+	add r5, r5, r6					; r5 += '0'
+	add r3, r3, r6					; r3 += '0'
+	storei r2, r5					; substitui o número na tela
+	inc r2
+	storei r2, r3 
+
+	loadn r0, #0
+	loadn r1, #tela4Linha0		; endereço inicial da tela
+	loadn r2, #2304				; cor vermelha para impressão da tela
+
+	call ImprimeTela
+
+	pop r6
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+
+	jmp paraExecucao
+
+fimDoJogo_Ganhou:	; Função que printa a tela "VOCÊ GANHOU!!!!"
+	push r0
+	push r1
+	push r2
+
+	loadn r0, #0				; posição inicial para imprimir a tela 
+	loadn r1, #tela3Linha0		; endereço inicial para impressão da tela
+	loadn r2, #0768				; cor verde oliva para impressão da tela 
+
+	call ImprimeTela
+
+	pop r2
+	pop r1
+	pop r0
+
+
+paraExecucao:		;	Função para parar a execução do jogo
+	halt
 
 
 ; TELA 0 = tela vazia
@@ -368,7 +500,7 @@ tela1Linha8  : string "      | |       |   |   ||     |____    "
 tela1Linha9  : string "      |_|       |___|   ||     |____|   "
 tela1Linha10 : string "                                        "
 tela1Linha11 : string "                                        "
-tela1Linha12 : string "       _______  _     _   _____         "
+tela1Linha12 : string "       ._____.  _     _   _____         "
 tela1Linha13 : string "       |_   _| | |   | |  |____|        "
 tela1Linha14 : string "         | |   | |___| |  |____         "
 tela1Linha15 : string "         | |   |  ___  |  |____|        "
@@ -419,6 +551,73 @@ tela2Linha26 : string "                    /\\                  "
 tela2Linha27 : string "                   /  \\                 "
 tela2Linha28 : string "                  |^  ^|                "
 tela2Linha29 : string "                  |____|                "
+
+
+; TELA 3: tela de fim de jogo (GANHOU)
+tela3Linha0  : string "                                        "
+tela3Linha1  : string "                                        "
+tela3Linha2  : string "                                        "
+tela3Linha3  : string "                                        "
+tela3Linha4  : string "                                        "
+tela3Linha5  : string "                                        "
+tela3Linha6  : string "                                        "
+tela3Linha7  : string "       ._________________________.      "
+tela3Linha8  : string "       |*************************|      "
+tela3Linha9  : string "       |*                       *|      "
+tela3Linha10 : string "       |*    P A R A B E N S    *|      "
+tela3Linha11 : string "       |* V O C E   G A N H O U *|      "
+tela3Linha12 : string "       |*                       *|      "
+tela3Linha13 : string "       |*************************|      "
+tela3Linha14 : string "       |_________________________|      "
+tela3Linha15 : string "                                        "
+tela3Linha16 : string "                                        "
+tela3Linha17 : string "                                        "
+tela3Linha18 : string "                                        "
+tela3Linha19 : string "                                        "
+tela3Linha20 : string "                                        "
+tela3Linha21 : string "                                        "
+tela3Linha22 : string "                                        "
+tela3Linha23 : string "                                        "
+tela3Linha24 : string "                                        "
+tela3Linha25 : string "                                        "
+tela3Linha26 : string "                                        "
+tela3Linha27 : string "                                        "
+tela3Linha28 : string "                                        "
+tela3Linha29 : string "                                        "
+
+
+; TELA 4: tela de fim de jogo (PERDEU)
+tela4Linha0  : string "                                        "
+tela4Linha1  : string "                                        "
+tela4Linha2  : string "                                        "
+tela4Linha3  : string "                                        "
+tela4Linha4  : string "                                        "
+tela4Linha5  : string "                                        "
+tela4Linha6  : string "                                        "
+tela4Linha7  : string "       ._________________________.      "
+tela4Linha8  : string "       |                         |      "
+tela4Linha9  : string "       |                         |      "
+tela4Linha10 : string "       |  V O C E   P E R D E U  |      "
+tela4Linha11 : string "       |                         |      "
+tela4Linha12 : string "       |                         |      "
+tela4Linha13 : string "       | No PALAVRAS CERTAS : XX |      "
+tela4Linha14 : string "       |                         |      "
+tela4Linha15 : string "       |_________________________|      "
+tela4Linha16 : string "                                        "
+tela4Linha17 : string "                                        "
+tela4Linha18 : string "                                        "
+tela4Linha19 : string "                                        "
+tela4Linha20 : string "                                        "
+tela4Linha21 : string "                                        "
+tela4Linha22 : string "                                        "
+tela4Linha23 : string "                                        "
+tela4Linha24 : string "                                        "
+tela4Linha25 : string "                                        "
+tela4Linha26 : string "                                        "
+tela4Linha27 : string "                                        "
+tela4Linha28 : string "                                        "
+tela4Linha29 : string "                                        "
+
 
 
 ; palavras para o usuário digitar 
