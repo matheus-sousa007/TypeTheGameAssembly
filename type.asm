@@ -17,70 +17,88 @@
 ;   3584 aqua
 ;   3840 preto
 
-jmp main
+jmp Main
 
+; Dados da palavra atual:
 corAtualdaPalavra: var #1
-nPalavrasResolvidas: var #1
-	static nPalavrasResolvidas + #0, #0
 palavraAtual: var #41
 posAtualdaPalavra: var #1
+
+; Nro de palavras que o usuário já acertou:
+nPalavrasResolvidas: var #1
+static nPalavrasResolvidas + #0, #0
+
+; Nro de letras acertadas da palavra atual e última letra digitada:
 nLetrasDeletadas: var #1
 letraDigitada: var #1
 
-main:
 
-    loadn r1, #tela1Linha0      ; endereço inicial para a tela inicial do jogo
-    loadn r2, #2304             ; cor vermelha para impressão da tela
+Main:
+
+	; Imprimindo a tela inicial do jogo por 1s:
+    loadn r1, #tela1Linha0		; endereço de início da tela inicial
+    loadn r2, #2304        		; cor vermelha para nome do jogo 
     call ImprimeTela
 	call DelayFixo
 	call ApagaTela
 	
-	loadn r1, #tela2Linha0		; endereço inicial da tela com a nave
-	loadn r2, #1280				; cor roxa para impressão da tela
+	; Imprimindo a tela com a nave:
+	loadn r1, #tela2Linha0		; endereço inicial da tela da nave
+	loadn r2, #1280				; cor roxa para nave
 	call ImprimeTela
 
-	loadn r1, #2560				; cor verde lima para corAtualdaPalavra
+	; Inicializando a cor atual da palavra:
+	loadn r1, #2560				; cor verde lima
 	store corAtualdaPalavra, r1
 
+	; Inicializando registradores auxiliares:
 	loadn r3, #0				; contador de palavras
 	loadn r6, #palavra1			; endereço inicial da primeira palavra
 	loadn r4, #41				; valor para pular para a próxima palavra na memória
 	loadn r5, #24				; número máximo de palavras
 	
-		main_Loop:
-		;breakp
+	Main_Loop:
+
+		; Atualizando a palavra atual na memória:
 		mov r1, r6
-		call mudarPalavraAtual
+		call MudaPalavraAtual
+
+		; Imprimindo a primeira palavra:
 		loadn r1, #palavraAtual			; pega a palavraAtual
 		loadn r0, #0					; posição para impressão na tela
 		load r2, corAtualdaPalavra		; resgata a cor para impressão na tela
 		call ImprimeStr
 		call DelayFixo
+
+		; Inicializando contador de palavras e total de palavras:
 		push r5
 		push r6
-		loadn r5, #0					; contador para o move_palavra				; for(int r5 = 0; r5 < r6; r5++)
+		loadn r5, #0					; contador para o MovePalavra for (int r5 = 0; r5 < r6; r5++)
 		loadn r6, #25					; linha limite onde a palavra pode chegar-
 
-		move_palavra_Loop:
+		MovePalavra_Loop:
+
 			push r0
 			push r1
 			push r2
-			; calcula o endereço da letra certa para resgatar a letra esperada
+
+			; Calculando o endereço da letra certa para resgatar a letra esperada:
 			loadn r0, #palavraAtual	
 			loadn r1, #16
 			load r2, nLetrasDeletadas
 			add r0, r0, r1
 			add r0, r0, r2
 			loadi r1, r0
-			;---------------
+
+			; Verificando letra retornada pela DigLetra:
 			call DigLetra
 			load r2, letraDigitada			; resgata a letra digitada
-			cmp r1, r2						; if(r1 == r2) then deletaLetra, r1 -> letra esperada, r2 -> letra digitada(ou 255 caso não tenha input)
-			ceq deletaLetra
+			cmp r1, r2						; if(r1 == r2) then DeletaLetra, r1 -> letra esperada, r2 -> letra digitada(ou 255 caso não tenha input)
+			ceq DeletaLetra
 			pop r2
 			pop r1
 			pop r0
-			call move_palavra				; move a palavra para 1 linha abaixo
+			call MovePalavra				; move a palavra para 1 linha abaixo
 			call DelayFixo
 			push r5
 			push r6
@@ -92,12 +110,12 @@ main:
 			jeq fimMovepalavra				; caso todas as letras foram deletadas, sai do loop interno
 			inc r5
 			cmp r5, r6						; enquanto não chegou na ultima linha, volta para o loop
-			jne move_palavra_Loop
-			jeq fimDoJogo_Perdeu			; caso a palavra chegou no limite da última linha, a pessoa perde o jogo
+			jne MovePalavra_Loop
+			jeq FimDoJogo_Perdeu			; caso a palavra chegou no limite da última linha, a pessoa perde o jogo
 		fimMovepalavra:
 		push r0
 
-		load r0, nPalavrasResolvidas		; incrementa o nº de palavras resolvidas com o fim do move_palavra_Loop
+		load r0, nPalavrasResolvidas		; incrementa o nº de palavras resolvidas com o fim do MovePalavra_Loop
 		inc r0
 		store nPalavrasResolvidas, r0
 
@@ -107,89 +125,86 @@ main:
 		add r6, r6, r4
 		cmp r3, r5							; continua no loop até o contador de palavras não chegar no limite
 		inc r3
-		jne main_Loop
-		jeq fimDoJogo_Ganhou				; caso tenha chegado no limite, vai para fimDoJogo_Ganhou
-
-;********************************************************
-;                       IMPRIME TELA
-;********************************************************	
-
-ImprimeTela: 	;  Rotina de Impresao de Cenario na Tela Inteira
-		;  r1 = endereco onde comeca a primeira linha do Cenario
-		;  r2 = cor do Cenario para ser impresso
-
-	push r0	; protege o r3 na pilha para ser usado na subrotina
-	push r1	; protege o r1 na pilha para preservar seu valor
-	push r2	; protege o r1 na pilha para preservar seu valor
-	push r3	; protege o r3 na pilha para ser usado na subrotina
-	push r4	; protege o r4 na pilha para ser usado na subrotina
-	push r5	; protege o r4 na pilha para ser usado na subrotina
-
-	loadn R0, #0  	; posicao inicial tem que ser o comeco da tela!
-	loadn R3, #40  	; Incremento da posicao da tela!
-	loadn R4, #41  	; incremento do ponteiro das linhas da tela
-	loadn R5, #1200 ; Limite da tela!
+		jne Main_Loop
+		jeq FimDoJogo_Ganhou				; caso tenha chegado no limite, vai para FimDoJogo_Ganhou
 	
-   ImprimeTela_Loop:
-		call ImprimeStr
-		add r0, r0, r3  	; incrementaposicao para a segunda linha na tela -->  r0 = R0 + 40
-		add r1, r1, r4  	; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
-		cmp r0, r5			; Compara r0 com 1200
-		jne ImprimeTela_Loop	; Enquanto r0 < 1200
+	halt
 
-	pop r5	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+
+ImprimeTela:	; Função que imprime a tela inteira de um cenário         
+				; Parâmetros: r1 -> endereço da primeira linha do cenário 
+				;             r2 -> cor do cenário a ser impresso         
+
+	; Protegendo os conteúdos dos registradores:
+	push r0	
+	push r1	
+	push r2	
+	push r3	
+	push r4	
+	push r5	
+
+	loadn R0, #0  		; começo da tela
+	loadn R3, #40  		; incremento da posição da tela
+	loadn R4, #41  		; incremento do ponteiro das linhas da tela
+	loadn R5, #1200		; limite da tela (largura x altura)
+	
+	ImprimeTela_Loop:
+		call ImprimeStr
+		add r0, r0, r3  	 ; incrementa posicão para a próxima linha na tela (r0 += 40)
+		add r1, r1, r4  	 ; incrementa o ponteiro para o comeco da proxima linha na memória (r1 += 41), 41 por causa do '\0'
+		cmp r0, r5			 ; Compara r0 com 1200
+		jne ImprimeTela_Loop ; while (r0 < 1200), continua no loop
+
+	; Recuperando os conteúdos dos registradores:
+	pop r5	
 	pop r4
 	pop r3
 	pop r2
 	pop r1
 	pop r0
-	rts
+
+	rts ; return
 				
-;---------------------
 
-;---------------------------	
-;********************************************************
-;                   IMPRIME STRING
-;********************************************************
-	
-ImprimeStr:	;  Rotina de Impresao de Mensagens:     
-													; 	Parâmetros:
-													;	r0 = Posicao da tela que o primeiro caractere da mensagem sera' impresso;
-													;  	r1 = endereco onde comeca a mensagem
-													; 	r2 = cor da mensagem.
-													;   Obs: a mensagem sera' impressa ate' encontrar "/0"
-	push r0	; protege o r0 na pilha para preservar seu valor
-	push r1	; protege o r1 na pilha para preservar seu valor
-	push r2	; protege o r1 na pilha para preservar seu valor
-	push r3	; protege o r3 na pilha para ser usado na subrotina
-	push r4	; protege o r4 na pilha para ser usado na subrotina
-	
-	loadn r3, #'\0'	; Criterio de parada
+ImprimeStr:		; Função que imprime uma mensagem na tela até encontrar o '\0'                           
+				; Parâmetros: r0 -> posição da tela em que o primeiro caractere da mensagem será impresso
+				;             r1 -> endereço da mensagem                                                 
+				;             r2 -> cor da mensagem                                                      
 
-   ImprimeStr_Loop:	
-		;breakp
-		loadi r4, r1
-		;breakp
-		cmp r4, r3		; If (Char == \0)  vai Embora
+	; Protegendo os conteúdos dos registradores:
+	push r0	
+	push r1	
+	push r2	
+	push r3	
+	push r4	
+	
+	loadn r3, #'\0'	; critério de parada = '\0'
+
+	; Imprimindo a string:
+	ImprimeStr_Loop:	
+		loadi r4, r1        ; obtém o charAtual da string
+		cmp r4, r3		   	; if (charAtual == '\0'), vai embora
 		jeq ImprimeStr_Sai
-		add r4, r2, r4	; Soma a Cor
-		outchar r4, r0	; Imprime o caractere na tela
-		inc r0			; Incrementa a posicao na tela
-		inc r1			; Incrementa o ponteiro da String
+		add r4, r2, r4		; soma a cor
+		outchar r4, r0		; imprime o caractere na tela
+		inc r0				; incrementa a posicao na tela
+		inc r1				; incrementa o ponteiro da String
 		jmp ImprimeStr_Loop
 	
-   ImprimeStr_Sai:	
-	;breakp
-	pop r4	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	; Recuperando os conteúdos dos registradores:
+   	ImprimeStr_Sai:	
+	pop r4
 	pop r3
 	pop r2
 	pop r1
 	pop r0
-	rts
+
+	rts ; return
 
 
-DelayFixo:		; Função de delay para a palavra
-				; Protegendo o conteúdo dos registradores:
+DelayFixo:		; Função que pausa a execução do programa em um tempo fixo (aprox 1s)
+
+	; Protegendo o conteúdo dos registradores:
 	push r0
 	push r1
 	push r2
@@ -214,8 +229,7 @@ DelayFixo:		; Função de delay para a palavra
 	rts ; return
 
 
-; Descrição: Apaga a tela inteira, preenchendo-a com espaços (' ')
-ApagaTela:
+ApagaTela:		; Função que apaga a tela inteira, preenchendo-a com espaços (' ')
 
     ; Protegendo os conteúdos dos registradores:
 	push r0
@@ -242,18 +256,23 @@ ApagaTela:
 	rts ; return
 
 
-mudaCorPalavra:		; Função que muda a cor da palavra
+MudaCorPalavra:		; Função que muda a cor da palavra
 
+	; Protegendo os conteúdos dos registradores:
 	push r0
 	push r1
 	push r2
 
+	; Carregando os códigos das cores:
 	loadn r0, #0000 	; cor branca
 	loadn r1, #2560		; cor verde lima
+
 	load r2, corAtualdaPalavra		; r2 = corAtualdaPalavra
-	;breakp
+
+	; Se cor for branca, corAtual vai de branco -> lima / se não corAtual vai de lima -> branco
 	cmp r2, r0
 	jeq MudaCorBranca
+
 	MudaCorLima:
 		store corAtualdaPalavra, r0		; muda da cor Lima para branca 
 		jmp fimMudaCor
@@ -261,56 +280,64 @@ mudaCorPalavra:		; Função que muda a cor da palavra
 		store corAtualdaPalavra, r1		; muda da cor branca para lima
 	fimMudaCor:
 
+	; Recuperando os conteúdos dos registradores:
 	pop r2
 	pop r1
 	pop r0
 
-	rts		; return
+	rts	; return
 
 
-mudarPalavraAtual:		; Função que altera a palavra atual
-						; Parâmetros:
-						;	r1 -> endereço inicial para a nova palavra
+MudaPalavraAtual:		; Função que altera a palavra atual
+						; Parâmetro: r1 -> endereço inicial para a nova palavra
+
+	; Protegendo os conteúdos dos registradores: 
 	push r0
 	push r1
 	push r2
 	push r3
 	push r5
 	
-	call mudaCorPalavra	; muda a cor da palavra
+	; Mudando a cor da palavra (volta a ser branca):
+	call MudaCorPalavra	
 
-	
-	loadn r0, #palavraAtual 	; Endereço inicial de palavraAtual
-	;breakp
+	; Obtendo o endereço da variável palavra atual:
+	loadn r0, #palavraAtual 	; r0 = endereço do 1° byte de palavraAtual
+
+	; Inicializando registradores auxiliares para o loop:
 	loadn r2, #40				; tamanho total da string
 	loadn r3, #0				; contador para escrever a palavra
-	store posAtualdaPalavra, r3	; zerando a posição atual da palavra
-	store nLetrasDeletadas, r3	; zerando o número de letras deletadas
 
-	mudarPalavraAtual_Loop:		; Loop para mudar a palavraAtual
-		;breakp
-		loadi r5, r1			; modifica a palavra atual resgatando cada letra da memória e colocando na variável palavraAtual
-		storei r0, r5
-		inc r0
-		inc r1
-		inc r3
-		cmp r3, r2
-		jle mudarPalavraAtual_Loop 	; enquanto não substituiu por completo a palavra, continua no loop
+	; Resetando a posição e o número de letras digitadas para 0:
+	store posAtualdaPalavra, r3
+	store nLetrasDeletadas, r3
 
-	loadn r3, #'\0'				; acrescentar o '\0' na string
+	; Percorrendo loop que modifica a palavra atual, resgatando cada letra da memória e colocando na variável palavraAtual:
+	MudaPalavraAtual_Loop:
+		loadi r5, r1			; r5 = charAtual da nova palavra
+		storei r0, r5           ; guarda o charAtual da nova palavra na palavraAtual
+		inc r0                  ; incrementa o endereço de palavraAtual
+		inc r1                  ; incrementa o endereço da nova palavra
+		inc r3                  ; incrementa contador
+		cmp r3, r2              ; if (contador <= tamanhoPalavra), continua no loop
+		jle MudaPalavraAtual_Loop
+
+	; Adicionando o terminador de string '\0' na palavra:
+	loadn r3, #'\0'				
 	storei r0, r3
-	;breakp
 
+	; Recuperando os conteúdos dos registradores:
 	pop r5
 	pop r3
 	pop r2
 	pop r1
 	pop r0
 
-	rts
+	rts ; return
 
 
-move_palavra:	; função que move a palavra no vídeo
+MovePalavra:	; função que move a palavra no vídeo
+
 	; Proteção de dados dos registradores
 	push r0 	
 	push r2
@@ -318,82 +345,96 @@ move_palavra:	; função que move a palavra no vídeo
 	push r1
 	
 	load r0, posAtualdaPalavra
-;	loadn r2, #25 		; limite máximo da linha da palavra
-
-	;cmp r0, r2			; if(r0 == r2){ O jogo termina }
-	;jeq fimDoJogo
-	
-	loadn r1, #tela0Linha0	; endereço inicial de uma linha vazia
 	
 	push r0
 
-	loadn r4, #40
-	mul r0, r0, r4						; r0 *= r4 (posicão inicial para imprimir na tela)
-	loadn r2, #0000			; cor branca para inserção da palavra na tela
-	
+	; Apagando palavra atual da tela:
+	loadn r4, #40           ; r4 = 40 = largura da tela
+	mul r0, r0, r4			; r0 *= r4 (posicão inicial para imprimir na tela)
+	loadn r1, #tela0Linha0	; endereço inicial de uma linha vazia
+	loadn r2, #3840 		; cor preta para a deleção
 	call ImprimeStr
 	
-	pop r0					; r0 = (r0 + 1) * r4 (próxima posição da palavra)
+	pop r0					
 
+	; Incrementando a posição atual da palavra:
 	inc r0
 	store posAtualdaPalavra, r0
-	mul r0, r0, r4
-	
-	loadn r1, #palavraAtual			; imprime a palavraAtual de acordo com a devida cor
-	load r2, corAtualdaPalavra
+
+	; Imprimindo a palavra:
+	mul r0, r0, r4          	; r0 *= r4 (posição da palavra)
+	loadn r1, #palavraAtual		; endereço da palavra atual
+	load r2, corAtualdaPalavra  ; cor da palavra atual 
 	call ImprimeStr
 
+	; Recuperando os dados dos registradores:
 	pop r1
 	pop r4
 	pop r2
 	pop r0
 
-	rts		; return
+	rts	; return
 
-deletaLetra:		; Função que deleta a letra da palavra atual
-					; Parâmetros:
-					;	r0 -> posição da letra a ser deletada
+
+DeletaLetra:		; Função que deleta a letra da palavra atual
+					; Parâmetro: r0 -> endereço da da letra a ser deletada
+
 	; Protegendo o conteúdo dos registradores
 	push r0
 	push r1
 	push r2
-	loadn r1, #' '			; Caractere espaço ' ' (ASCII = 32)
+
+	; Modificando a letra na memória, substituindo com espaço:
+	loadn r1, #' '				; caractere espaço ' ' (ASCII = 32)
 	storei r0, r1
 
-	load r0, posAtualdaPalavra	;	sobrescreve a palavraAtual naquela linha
-	loadn r2, #40
-	mul r0, r0, r2
-	loadn r1, #palavraAtual
-	
+	; Imprimindo a palavra com a letra deletada:
+	loadn r2, #40               ; r2 = 40 = largura da tela
+	load r0, posAtualdaPalavra  ; obtém a altura atual da palavra
+	mul r0, r0, r2              ; posição da tela = r0 = r0 * r2
+	loadn r1, #palavraAtual     ; endereço da palavra atual
+	load r2, corAtualdaPalavra  ; cor da palavra
 	call ImprimeStr
 
-	load r2, nLetrasDeletadas	; adiciona o número de letras deletadas
+	; Incrementando o número de letras deletadas na memória:
+	load r2, nLetrasDeletadas
 	inc r2
 	store nLetrasDeletadas, r2
 
-	load r1, corAtualdaPalavra	; muda a cor da palavra caso necessário
+	; Mudando a cor da palavra se ela ainda estiver branca:
+	load r1, corAtualdaPalavra
 	loadn r2, #0000
 	cmp r1, r2
-	ceq mudaCorPalavra
+	ceq MudaCorPalavra
 
+	; Recuperando o conteúdo dos registradores:
 	pop r2
 	pop r1
 	pop r0
-	rts
+
+	rts ; return
 
 
 DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra"
 
+	; Protegendo os conteúdos dos registradores:
 	push r0
 	push r1
-   	inchar r0						; Le o teclado, se nada for digitado = 255
+
+	; Leitura:
+   	inchar r0						; Lê o teclado, se nada for digitado, letraDigitada = 255
 	store letraDigitada, r0			; Salva a tecla na variavel global "letraDigitada"
+
+	; Recuperando os conteúdos dos registradores:
 	pop r1
 	pop r0
-	rts
 
-fimDoJogo_Perdeu:	; Função para imprimir a tela "VOCÊ PERDEU!!!"
+	rts ; return
+
+
+FimDoJogo_Perdeu:	; Função para imprimir a tela "VOCÊ PERDEU!!!"
 	
+	; Protegendo os conteúdos dos registradores:
 	push r0
 	push r1
 	push r2
@@ -402,9 +443,10 @@ fimDoJogo_Perdeu:	; Função para imprimir a tela "VOCÊ PERDEU!!!"
 	push r5
 	push r6
 
-	loadn r1, #30				; Calcula o endereço para adicionar o número de palavras resolvidas na tela
-	loadn r2, #tela4Linha13
-	add r2, r2, r1
+	; Calculando o endereço para adicionar o número de palavras resolvidas na tela:
+	loadn r1, #30                   ; r3 = 30 (posição no eixo x da pontuação)
+	loadn r2, #tela4Linha13         ; linha da tela da pontuação
+	add r2, r2, r1                  ; posição em que a pontuação deve ser adicionada
 
 	loadn r6, #'0'					; adicionando o número de palavras resolvidas na tela ;
 	load r3, nPalavrasResolvidas
@@ -424,6 +466,7 @@ fimDoJogo_Perdeu:	; Função para imprimir a tela "VOCÊ PERDEU!!!"
 
 	call ImprimeTela
 
+	; Recuperando os conteúdos dos registradores:
 	pop r6
 	pop r5
 	pop r4
@@ -434,7 +477,10 @@ fimDoJogo_Perdeu:	; Função para imprimir a tela "VOCÊ PERDEU!!!"
 
 	jmp paraExecucao
 
-fimDoJogo_Ganhou:	; Função que printa a tela "VOCÊ GANHOU!!!!"
+
+FimDoJogo_Ganhou:	; Função que printa a tela "VOCÊ GANHOU!!!!"
+
+	; Protegendo os conteúdos dos registradores:
 	push r0
 	push r1
 	push r2
@@ -445,6 +491,7 @@ fimDoJogo_Ganhou:	; Função que printa a tela "VOCÊ GANHOU!!!!"
 
 	call ImprimeTela
 
+	; Recuperando os conteúdos dos registradores:
 	pop r2
 	pop r1
 	pop r0
@@ -520,7 +567,7 @@ tela1Linha28 : string "                                        "
 tela1Linha29 : string "                                        "
 
 
-; Tela 1 = Nave Sozinha
+; TELA 2 = Nave Sozinha
 tela2Linha0  : string "                                        "
 tela2Linha1  : string "                                        "
 tela2Linha2  : string "                                        "
@@ -621,7 +668,6 @@ tela4Linha29 : string "                                        "
 
 
 ; palavras para o usuário digitar 
-; COLOCAR DEPOIS AS PALAVRAS AQUI!!! 
 palavra1  : string "                ambiguous               "
 palavra2  : string "                automatic               "
 palavra3  : string "                available               "
