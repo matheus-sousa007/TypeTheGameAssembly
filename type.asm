@@ -32,6 +32,11 @@ static nPalavrasResolvidas + #0, #0
 nLetrasDeletadas: var #1
 letraDigitada: var #1
 
+; Dados do tiro:
+posTiro: var #1
+flagTiro: var #1
+corTiro: var #1
+
 
 Main:
 
@@ -50,6 +55,14 @@ Main:
 	; Inicializando a cor atual da palavra:
 	loadn r1, #2560 				; cor verde lima
 	store corAtualdaPalavra, r1
+
+	; Inicializando os dados do tiro:
+	loadn r0, #0                
+    loadn r1, #25               
+    loadn r2, #2816
+	store posTiro, r1           ; altura 25 = altura da tela - altura da nave
+	store flagTiro, r0          ; falso
+    store corTiro, r2           ; cor amarela
 
 	; Inicializando registradores auxiliares:
 	loadn r3, #0				; contador de palavras
@@ -319,6 +332,9 @@ MovePalavra:
 		add r0, r0, r2
 		loadi r1, r0 				; r1 tem a letra esperada
 
+        ; Movendo a palavra 1 linha para baixo:
+		call MovePalavra_Redesenha
+
 		; Verificando letra retornada pela DigLetra:
 		call DigLetra
 		load r2, letraDigitada			; resgata a letra digitada
@@ -327,9 +343,8 @@ MovePalavra:
 		cmp r1, r2						; if(r1 == r2) then DeletaLetra, r1 = letra esperada, r2 = letra digitada (ou 255)
 		ceq DeletaLetra
 
-		; Movendo a palavra 1 linha para baixo:
-		call MovePalavra_Redesenha				; move a palavra para 1 linha abaixo
-		call DelayFixo
+		; Movendo o tiro:
+		call MoveTiro
 
 		; Verificando se a palavra já está resolvida:
 		load r3, nLetrasDeletadas		; verifica se todas as letras já foram deletadas
@@ -343,6 +358,8 @@ MovePalavra:
 		jne MovePalavra_Loop
 		call FimDoJogo_Perdeu			; caso a palavra chegou no limite da última linha, a pessoa perde o jogo
 	fimMovepalavra:
+
+    call MovePalavra_Redesenha				; apaga o último caractere da palavra
 
 	pop r4
 	pop r3
@@ -407,14 +424,6 @@ DeletaLetra:		; Função que deleta a letra da palavra atual
 	loadn r1, #' '				; caractere espaço ' ' (ASCII = 32)
 	storei r0, r1
 
-	; Imprimindo a palavra com a letra deletada:
-	loadn r2, #40               ; r2 = 40 = largura da tela
-	load r0, posAtualdaPalavra  ; obtém a altura atual da palavra
-	mul r0, r0, r2              ; posição da tela = r0 = r0 * r2
-	loadn r1, #palavraAtual     ; endereço da palavra atual
-	load r2, corAtualdaPalavra  ; cor da palavra
-	call ImprimeStr
-
 	; Incrementando o número de letras deletadas na memória:
 	load r2, nLetrasDeletadas
 	inc r2
@@ -425,6 +434,10 @@ DeletaLetra:		; Função que deleta a letra da palavra atual
 	loadn r2, #0000
 	cmp r1, r2
 	ceq MudaCorPalavra
+
+    ; Acionando a flag de tiro:
+    loadn r0, #1
+    store flagTiro, r0
 
 	; Recuperando o conteúdo dos registradores:
 	pop r2
@@ -447,6 +460,120 @@ DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra
 	; Recuperando os conteúdos dos registradores:
 	pop r1
 	pop r0
+
+	rts ; return
+
+
+MoveTiro:		; Função que move o tiro na tela, pausando a execução do programa em um tempo variável
+
+	; Protegendo o conteúdo dos registradores:
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+
+	; r0 = Δt da pausa = (25 - nPalavrasResolvidas) * 12800
+	load r4, nPalavrasResolvidas 
+	loadn r0, #25                
+	sub r0, r0, r4               
+	loadn r4, #12800               
+	mul r0, r0, r4
+
+	; Inicializando demais registradores para o loop:
+	loadn r1, #25				; 25 para o "laço" do delay
+	loadn r2, #0                ; contador para o delay
+
+    ; Reposicionando o tiro na posição inicial:
+    store posTiro, r1
+
+	MoveTiro_Delay2:
+		mov r3, r0
+        MoveTiro_Delay: 
+	        dec r3
+			cmp r3, r2					
+	        jnz MoveTiro_Delay
+	    dec r1
+		call MoveTiro_Redesenha
+		cmp r1, r2
+	    jnz MoveTiro_Delay2
+	
+	; Recuperando o valor anterior dos registradores:
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	
+	rts ; return
+
+
+MoveTiro_Redesenha:
+
+	; Protegendo os conteúdos dos registradores:
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+
+    ; Skipando se a flag de tiro for 0:
+    load r1, flagTiro
+    loadn r2, #0
+    cmp r1, r2
+    jeq MoveTiro_Redesenha_Skip
+
+    ; Obtendo a posição do tiro da memória:
+    load r0, posTiro
+
+    ; Obtendo o número da posição do tiro na tela (posTiro * 40 + 20)
+    loadn r1, #40
+    loadn r2, #20
+    mul r1, r1, r0
+    add r1, r1, r2
+
+    ; Apagando o tiro com espaço:
+    loadn r3, #' '
+    outchar r3, r1
+
+    ; Verificando se o tiro vai colidir com a palavra:
+    load r4, posAtualdaPalavra
+    inc r4
+    cmp r0, r4
+    jeq MoveTiro_Redesenha_Colisao
+
+    ; Obtendo a nova posição do tiro na tela (posTiro * 40 + 20 - 40):
+    loadn r2, #40
+    sub r1, r1, r2
+
+    ; Reescrevendo o tiro:
+    loadn r3, #'|'
+    load r4, corTiro
+    add r3, r3, r4
+    outchar r3, r1
+
+    ; Decrementando a posição do tiro:
+    dec r0
+    store posTiro, r0
+    
+    jmp MoveTiro_Redesenha_Skip
+
+    MoveTiro_Redesenha_Colisao:
+
+        ; Negando a flag de tiro:
+        loadn r0, #0
+        store flagTiro, r0
+
+    MoveTiro_Redesenha_Skip:
+
+        ; Recuperando os conteúdos dos registradores:
+        pop r5
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
 
 	rts ; return
 
