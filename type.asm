@@ -48,7 +48,7 @@ Main:
 	call ImprimeTela
 
 	; Inicializando a cor atual da palavra:
-	loadn r1, #2560				; cor verde lima
+	loadn r1, #2560 				; cor verde lima
 	store corAtualdaPalavra, r1
 
 	; Inicializando registradores auxiliares:
@@ -56,79 +56,38 @@ Main:
 	loadn r6, #palavra1			; endereço inicial da primeira palavra
 	loadn r4, #41				; valor para pular para a próxima palavra na memória
 	loadn r5, #24				; número máximo de palavras
-	
+		
 	Main_Loop:
 
 		; Atualizando a palavra atual na memória:
 		mov r1, r6
 		call MudaPalavraAtual
 
-		; Imprimindo a primeira palavra:
+		; Imprimindo a palavra atual:
 		loadn r1, #palavraAtual			; pega a palavraAtual
 		loadn r0, #0					; posição para impressão na tela
 		load r2, corAtualdaPalavra		; resgata a cor para impressão na tela
 		call ImprimeStr
 		call DelayFixo
 
-		; Inicializando contador de palavras e total de palavras:
-		push r5
-		push r6
-		loadn r5, #0					; contador para o MovePalavra for (int r5 = 0; r5 < r6; r5++)
-		loadn r6, #25					; linha limite onde a palavra pode chegar-
+		; Movendo a palavra verticalmente:
+		call MovePalavra
 
-		MovePalavra_Loop:
-
-			push r0
-			push r1
-			push r2
-
-			; Calculando o endereço da letra certa para resgatar a letra esperada:
-			loadn r0, #palavraAtual	
-			loadn r1, #16
-			load r2, nLetrasDeletadas
-			add r0, r0, r1
-			add r0, r0, r2
-			loadi r1, r0
-
-			; Verificando letra retornada pela DigLetra:
-			call DigLetra
-			load r2, letraDigitada			; resgata a letra digitada
-			cmp r1, r2						; if(r1 == r2) then DeletaLetra, r1 -> letra esperada, r2 -> letra digitada(ou 255 caso não tenha input)
-			ceq DeletaLetra
-			pop r2
-			pop r1
-			pop r0
-			call MovePalavra				; move a palavra para 1 linha abaixo
-			call DelayFixo
-			push r5
-			push r6
-			load r5, nLetrasDeletadas		; verifica se todas as letras já foram deletadas
-			loadn r6, #9
-			cmp r5, r6
-			pop r6
-			pop r5
-			jeq fimMovepalavra				; caso todas as letras foram deletadas, sai do loop interno
-			inc r5
-			cmp r5, r6						; enquanto não chegou na ultima linha, volta para o loop
-			jne MovePalavra_Loop
-			jeq FimDoJogo_Perdeu			; caso a palavra chegou no limite da última linha, a pessoa perde o jogo
-		fimMovepalavra:
-		push r0
-
-		load r0, nPalavrasResolvidas		; incrementa o nº de palavras resolvidas com o fim do MovePalavra_Loop
+		; Incrementando o número de palavas resolvidas:
+		load r0, nPalavrasResolvidas
 		inc r0
 		store nPalavrasResolvidas, r0
 
-		pop r0
-		pop r6
-		pop r5
-		add r6, r6, r4
-		cmp r3, r5							; continua no loop até o contador de palavras não chegar no limite
+		; Verificando se chegou no fim do jogo:
+		cmp r3, r5
+		ceq FimDoJogo_Ganhou
+
+		; Se não, repetindo Main_Loop:
 		inc r3
-		jne Main_Loop
-		jeq FimDoJogo_Ganhou				; caso tenha chegado no limite, vai para FimDoJogo_Ganhou
-	
-	halt
+		add r6, r6, r4
+		jmp Main_Loop
+
+	halt ; nunca vai chegar aqui
 
 
 ImprimeTela:	; Função que imprime a tela inteira de um cenário         
@@ -336,7 +295,67 @@ MudaPalavraAtual:		; Função que altera a palavra atual
 	rts ; return
 
 
-MovePalavra:	; função que move a palavra no vídeo
+MovePalavra:
+
+	; Protegendo os conteúdos dos registradores:
+	push r5
+	push r6
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+
+	loadn r5, #0					; contador para o MovePalavra for (int r5 = 0; r5 < r6; r5++)
+	loadn r6, #25					; linha limite onde a palavra pode chegar
+
+	MovePalavra_Loop:
+
+		; Calculando o endereço da letra certa para resgatar a letra esperada:
+		loadn r0, #palavraAtual	
+		loadn r1, #16
+		load r2, nLetrasDeletadas
+		add r0, r0, r1
+		add r0, r0, r2
+		loadi r1, r0 				; r1 tem a letra esperada
+
+		; Verificando letra retornada pela DigLetra:
+		call DigLetra
+		load r2, letraDigitada			; resgata a letra digitada
+
+		; Deletando uma letra se o usuário digitou a letra esperada:
+		cmp r1, r2						; if(r1 == r2) then DeletaLetra, r1 = letra esperada, r2 = letra digitada (ou 255)
+		ceq DeletaLetra
+
+		; Movendo a palavra 1 linha para baixo:
+		call MovePalavra_Redesenha				; move a palavra para 1 linha abaixo
+		call DelayFixo
+
+		; Verificando se a palavra já está resolvida:
+		load r3, nLetrasDeletadas		; verifica se todas as letras já foram deletadas
+		loadn r4, #9
+		cmp r3, r4
+		jeq fimMovepalavra				; caso todas as letras foram deletadas, sai do loop interno
+
+		; Verificando se o usuário perdeu:
+		inc r5
+		cmp r5, r6						; enquanto não chegou na ultima linha, volta para o loop
+		jne MovePalavra_Loop
+		call FimDoJogo_Perdeu			; caso a palavra chegou no limite da última linha, a pessoa perde o jogo
+	fimMovepalavra:
+
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	pop r6
+	pop r5
+
+	rts ; return
+
+
+MovePalavra_Redesenha:	; função que redesenha a palavra no vídeo
 
 	; Proteção de dados dos registradores
 	push r0 	
@@ -495,6 +514,8 @@ FimDoJogo_Ganhou:	; Função que printa a tela "VOCÊ GANHOU!!!!"
 	pop r2
 	pop r1
 	pop r0
+
+	rts;
 
 
 paraExecucao:		;	Função para parar a execução do jogo
@@ -664,7 +685,6 @@ tela4Linha26 : string "                                        "
 tela4Linha27 : string "                                        "
 tela4Linha28 : string "                                        "
 tela4Linha29 : string "                                        "
-
 
 
 ; palavras para o usuário digitar 
