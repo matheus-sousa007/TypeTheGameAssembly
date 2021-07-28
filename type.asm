@@ -70,7 +70,7 @@ Main:
     loadn r4, #41               ; valor para pular para a próxima palavra na memória
     loadn r5, #24               ; número máximo de palavras
 
-	Main_Loop:
+    Main_Loop:
 
         ; Atualizando a palavra atual na memória:
         mov r1, r6
