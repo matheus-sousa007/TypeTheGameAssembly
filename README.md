@@ -4,7 +4,13 @@ Repositório do Projeto da Disciplina de [Prática em Organização e Arquitetur
 
 ## Item 1 - Implementação do Jogo
 
-TODO: Descrição
+Type The Game Assembly é um jogo de digitação single player construído com o Assembly do [Processador ICMC](https://github.com/simoesusp/Processador-ICMC). Nesse jogo, o jogador tem o objetivo de destruir as palavras que correm a tela antes que elas colidam com sua nave.
+
+![Imagem do jogo funcionando](./media/type1.gif)
+
+A velocidade das palavras é incremental, i.e., a velocidade aumenta a cada palavra acertada.
+
+![Imagem do jogo funcionando](./media/type2.gif)
 
 ## Itens 2 e 3 - Construção do Hardware do Processador
 
