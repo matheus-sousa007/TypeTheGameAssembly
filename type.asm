@@ -21,8 +21,11 @@ jmp Main
 
 ; Dados da palavra atual:
 corAtualdaPalavra: var #1
-palavraAtual: var #41
+palavraAtual: var #10
 posAtualdaPalavra: var #1
+
+posPalavraCaractere1: var #1
+    static posPalavraCaractere1 + #0, #16
 
 ; Nro de palavras que o usuário já acertou:
 nPalavrasResolvidas: var #1
@@ -67,7 +70,7 @@ Main:
     ; Inicializando registradores auxiliares:
     loadn r3, #0                ; contador de palavras
     loadn r6, #palavra1         ; endereço inicial da primeira palavra
-    loadn r4, #41               ; valor para pular para a próxima palavra na memória
+    loadn r4, #10               ; valor para pular para a próxima palavra na memória
     loadn r5, #24               ; número máximo de palavras
 
     Main_Loop:
@@ -78,7 +81,7 @@ Main:
 
         ; Imprimindo a palavra atual:
         loadn r1, #palavraAtual         ; pega a palavraAtual
-        loadn r0, #0                    ; posição para impressão na tela
+        load r0, posPalavraCaractere1   ; posição para impressão na tela
         load r2, corAtualdaPalavra      ; resgata a cor para impressão na tela
         call ImprimeStr
         call DelayFixo
@@ -270,6 +273,8 @@ MudaPalavraAtual:       ; Função que altera a palavra atual
     push r3
     push r5
 
+    call Atualiza_score
+
     ; Mudando a cor da palavra (volta a ser branca):
     call MudaCorPalavra	
 
@@ -277,7 +282,7 @@ MudaPalavraAtual:       ; Função que altera a palavra atual
     loadn r0, #palavraAtual     ; r0 = endereço do 1° byte de palavraAtual
 
     ; Inicializando registradores auxiliares para o loop:
-    loadn r2, #40               ; tamanho total da string
+    loadn r2, #9               ; tamanho total da string
     loadn r3, #0                ; contador para escrever a palavra
 
     ; Resetando a posição e o número de letras digitadas para 0:
@@ -326,7 +331,7 @@ MovePalavra:
 
         ; Calculando o endereço da letra certa para resgatar a letra esperada:
         loadn r0, #palavraAtual	
-        loadn r1, #16
+        loadn r1, #0
         load r2, nLetrasDeletadas
         add r0, r0, r1
         add r0, r0, r2
@@ -380,8 +385,10 @@ MovePalavra_Redesenha:      ; função que redesenha a palavra no vídeo
     push r2
     push r4		
     push r1
+    push r3
 
     load r0, posAtualdaPalavra
+    load r3, posPalavraCaractere1
 
     push r0
 
@@ -400,11 +407,13 @@ MovePalavra_Redesenha:      ; função que redesenha a palavra no vídeo
 
     ; Imprimindo a palavra:
     mul r0, r0, r4              ; r0 *= r4 (posição da palavra)
+    add r0, r0, r3              ; r0 += 16 posicao da palavra
     loadn r1, #palavraAtual     ; endereço da palavra atual
     load r2, corAtualdaPalavra  ; cor da palavra atual 
     call ImprimeStr
 
     ; Recuperando os dados dos registradores:
+    pop r3
     pop r1
     pop r4
     pop r2
@@ -478,7 +487,7 @@ MoveTiro:       ; Função que move o tiro na tela, pausando a execução do pro
     load r4, nPalavrasResolvidas 
     loadn r0, #25                
     sub r0, r0, r4               
-    loadn r4, #12800               
+    loadn r4, #22000               
     mul r0, r0, r4
 
     ; Inicializando demais registradores para o loop:
@@ -588,6 +597,8 @@ FimDoJogo_Perdeu:   ; Função para imprimir a tela "VOCÊ PERDEU!!!"
     push r5
     push r6
 
+    call ApagaTela
+
     ; Calculando o endereço para adicionar o número de palavras resolvidas na tela:
     loadn r1, #30                   ; r3 = 30 (posição no eixo x da pontuação)
     loadn r2, #tela4Linha13         ; linha da tela da pontuação
@@ -630,6 +641,8 @@ FimDoJogo_Ganhou:   ; Função que printa a tela "VOCÊ GANHOU!!!!"
     push r1
     push r2
 
+    call ApagaTela
+
     loadn r0, #0                ; posição inicial para imprimir a tela 
     loadn r1, #tela3Linha0      ; endereço inicial para impressão da tela
     loadn r2, #0768             ; cor verde oliva para impressão da tela 
@@ -642,6 +655,46 @@ FimDoJogo_Ganhou:   ; Função que printa a tela "VOCÊ GANHOU!!!!"
     pop r0
 
     rts ; return
+
+Atualiza_score:                 ; função que atualiza o score na tela
+
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+
+    load r0, nPalavrasResolvidas        ; r0 = nPalavrasResolvidas
+    loadn r1, #10                       ; r1 = 10
+
+    mod r2, r0, r1                      ; r2 = r0 % r1      -> digito unitário de r0
+    div r3, r0, r1                      ; r3 = r0 // r1   -> digito decimal de r0
+
+    loadn r4, #'0'             ; caractere '0' para ajuste de caractere
+
+    add r2, r2, r4             ; ajustando o caractere para impressão na tela             
+    add r3, r3, r4             ; ajustando o caractere para impressão na tela
+
+    loadn r4, #1280            ; cor roxa para impressão do score
+
+    add r2, r2, r4             ; atualizando r2 com a cor roxa
+    add r3, r3, r4             ; atualizando r3 com a cor roxa
+
+    loadn r0, #1156            ; r0 = posição exata para escrever o score             
+
+    outchar r3, r0
+
+    inc r0
+
+    outchar r2, r0
+
+    pop r4
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+
+    rts
 
 
 paraExecucao:       ; Função para parar a execução do jogo
@@ -743,7 +796,7 @@ tela2Linha24 : string "                                        "
 tela2Linha25 : string "                                        "
 tela2Linha26 : string "                    /\\                  "
 tela2Linha27 : string "                   /  \\                 "
-tela2Linha28 : string "                  |^  ^|                "
+tela2Linha28 : string "                  |^  ^|    score : 00  "
 tela2Linha29 : string "                  |____|                "
 
 
@@ -814,28 +867,28 @@ tela4Linha29 : string "                                        "
 
 
 ; palavras para o usuário digitar 
-palavra1  : string "                ambiguous               "
-palavra2  : string "                automatic               "
-palavra3  : string "                available               "
-palavra4  : string "                catalogue               "
-palavra5  : string "                chocolate               "
-palavra6  : string "                criticism               "
-palavra7  : string "                detective               "
-palavra8  : string "                economics               "
-palavra9  : string "                effective               "
-palavra10 : string "                essential               "
-palavra11 : string "                formation               "
-palavra12 : string "                intention               "
-palavra13 : string "                invisible               "
-palavra14 : string "                modernize               "
-palavra15 : string "                parameter               "
-palavra16 : string "                performer               "
-palavra17 : string "                policeman               "
-palavra18 : string "                practical               "
-palavra19 : string "                president               "
-palavra20 : string "                privilege               "
-palavra21 : string "                secretary               "
-palavra22 : string "                situation               "
-palavra23 : string "                strategic               "
-palavra24 : string "                treatment               "
-palavra25 : string "                vegetable               "
+palavra1  : string "ambiguous"
+palavra2  : string "automatic"
+palavra3  : string "available"
+palavra4  : string "catalogue"
+palavra5  : string "chocolate"
+palavra6  : string "criticism"
+palavra7  : string "detective"
+palavra8  : string "economics"
+palavra9  : string "effective"
+palavra10 : string "essential"
+palavra11 : string "formation"
+palavra12 : string "intention"
+palavra13 : string "invisible"
+palavra14 : string "modernize"
+palavra15 : string "parameter"
+palavra16 : string "performer"
+palavra17 : string "policeman"
+palavra18 : string "practical"
+palavra19 : string "president"
+palavra20 : string "privilege"
+palavra21 : string "secretary"
+palavra22 : string "situation"
+palavra23 : string "strategic"
+palavra24 : string "treatment"
+palavra25 : string "vegetable"
