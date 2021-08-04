@@ -1,6 +1,6 @@
 # Type The Game Assembly
 
-Repositório do Projeto da Disciplina de [Prática em Organização e Arquitetura de Computadores](https://uspdigital.usp.br/jupiterweb/obterDisciplina?sgldis=SSC0119) ministrada pelo professor Eduardo Simões.
+Repositório do Projeto da Disciplina de [Prática em Organização de Computadores](https://uspdigital.usp.br/jupiterweb/obterDisciplina?sgldis=SSC0119) ministrada pelo professor Eduardo Simões.
 
 ## Item 1 - Implementação do Jogo
 
