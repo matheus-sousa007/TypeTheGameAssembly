@@ -29,6 +29,7 @@ posPalavraCaractere1: var #1
 
 ; Nro de palavras que o usuário já acertou:
 nPalavrasResolvidas: var #1
+static nPalavrasResolvidas + #0, #0
 
 ; Nro de letras acertadas da palavra atual e última letra digitada:
 nLetrasDeletadas: var #1
@@ -65,9 +66,6 @@ Main:
     store posTiro, r1           ; altura 25 = altura da tela - altura da nave
     store flagTiro, r0          ; falso
     store corTiro, r2           ; cor amarela
-
-    ; Inicializando o número de palavras resolvidas:
-    store nPalavrasResolvidas, r0
 
     ; Inicializando registradores auxiliares:
     loadn r3, #0                ; contador de palavras
@@ -633,7 +631,7 @@ FimDoJogo_Perdeu:   ; Função para imprimir a tela "VOCÊ PERDEU!!!"
     pop r1
     pop r0
 
-    call JogarNovamente
+    jmp paraExecucao
 
 
 FimDoJogo_Ganhou:   ; Função que printa a tela "VOCÊ GANHOU!!!!"
@@ -656,38 +654,7 @@ FimDoJogo_Ganhou:   ; Função que printa a tela "VOCÊ GANHOU!!!!"
     pop r1
     pop r0
 
-    call JogarNovamente
-
-
-JogarNovamente:     ; Função que verifica se o usuário quer jogar novamente
-
-    push r0
-    push r1
-
-    JogarNovamente_Loop:
-
-        ; Obtendo o valor da letra digitada (ou 255):
-        call DigLetra
-        load r1, letraDigitada
-
-        ; Se a letra digitada for 'n', travar execução: 
-        loadn r0, #'n'
-        cmp r0, r1
-        jeq PararExecucao
-
-        ; Se a letra digitada não for 's', lê novamente:
-        loadn r0, #'s'
-        cmp r0, r1
-        jne JogarNovamente_Loop
-
-    ; Se não, jogar novamente:
-    call ApagaTela
-
-    pop r1
-    pop r0
-    pop r0 ; seria o rts
-    jmp Main
-
+    rts ; return
 
 Atualiza_score:                 ; função que atualiza o score na tela
 
@@ -730,8 +697,7 @@ Atualiza_score:                 ; função que atualiza o score na tela
     rts
 
 
-PararExecucao:       ; Função para parar a execução do jogo
-    call ApagaTela
+paraExecucao:       ; Função para parar a execução do jogo
 	halt
 
 
@@ -855,7 +821,7 @@ tela3Linha16 : string "                                        "
 tela3Linha17 : string "                                        "
 tela3Linha18 : string "                                        "
 tela3Linha19 : string "                                        "
-tela3Linha20 : string "       Quer jogar novamente? <s/n>      "
+tela3Linha20 : string "                                        "
 tela3Linha21 : string "                                        "
 tela3Linha22 : string "                                        "
 tela3Linha23 : string "                                        "
@@ -888,7 +854,7 @@ tela4Linha16 : string "                                        "
 tela4Linha17 : string "                                        "
 tela4Linha18 : string "                                        "
 tela4Linha19 : string "                                        "
-tela4Linha20 : string "       Quer jogar novamente? <s/n>      "
+tela4Linha20 : string "                                        "
 tela4Linha21 : string "                                        "
 tela4Linha22 : string "                                        "
 tela4Linha23 : string "                                        "

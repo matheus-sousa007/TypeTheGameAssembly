@@ -143,3 +143,6 @@ A saída do simulador se deu conforme a imagem abaixo:
 Tendo a nova instrução implementada e funcionando, podemos adaptar jogos já feitos, retirando as instruções `inchar`s, substituindo-as por instruções `inino`s. Como resultado, podemos jogar com joystick:
 
 ![Adaptação de um jogo com a inino](./media/gif2.gif)
+
+## Item 5 - Vídeo explicativo sobre o projeto
+ - [Link para o vídeo aqui!!](https://drive.google.com/file/d/19oSW477o_QEzTjBpDYh-8Ke6ParimVZI/view?usp=sharing)
